@@ -1,0 +1,1789 @@
+/* Inland Revenue Department - Forced Registration Master System CSS Design System */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+Sinhala:wght@400;600;700&display=swap');
+
+:root {
+  --font-main: 'Plus Jakarta Sans', 'Noto Sans Sinhala', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Executive Dark Theme Defaults */
+  --bg-primary: #0a0e17;
+  --bg-secondary: #101726;
+  --bg-card: rgba(18, 26, 43, 0.85);
+  --bg-card-hover: rgba(26, 38, 62, 0.95);
+  --bg-input: #0c1220;
+  --bg-glass: rgba(16, 23, 38, 0.7);
+
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-focus: #3b82f6;
+  --border-gold: rgba(245, 158, 11, 0.3);
+
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  /* Official IRD Sri Lanka Color Palette */
+  --ird-maroon: #741016;
+  --ird-maroon-dark: #4d080c;
+  --ird-maroon-light: #941720;
+  --ird-maroon-gradient: linear-gradient(135deg, #741016 0%, #4a060a 100%);
+  --ird-gold: #d4af37;
+  --ird-gold-bright: #f59e0b;
+  --ird-gold-gradient: linear-gradient(135deg, #f59e0b 0%, #b45309 100%);
+  --ird-navy: #0B2545;
+
+  --accent-gold: #f59e0b;
+  --accent-gold-hover: #d97706;
+  --accent-gold-bg: rgba(245, 158, 11, 0.12);
+
+  --accent-blue: #3b82f6;
+  --accent-blue-hover: #2563eb;
+  --accent-blue-bg: rgba(59, 130, 246, 0.12);
+
+  --accent-emerald: #10b981;
+  --accent-emerald-bg: rgba(16, 185, 129, 0.12);
+
+  --accent-rose: #f43f5e;
+  --accent-rose-bg: rgba(244, 63, 94, 0.15);
+
+  --accent-amber: #f59e0b;
+  --accent-purple: #a855f7;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.45);
+  --shadow-glow-gold: 0 0 20px rgba(245, 158, 11, 0.25);
+  --shadow-glow-blue: 0 0 20px rgba(59, 130, 246, 0.25);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+}
+
+[data-theme='light'] {
+  --bg-primary: #f6f8fb;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --bg-input: #ffffff;
+  --bg-glass: rgba(255, 255, 255, 0.95);
+
+  --border-color: #e2e8f0;
+  --border-focus: #741016;
+  --border-gold: rgba(212, 175, 55, 0.4);
+
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 8px 20px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 16px 36px rgba(0, 0, 0, 0.12);
+  --shadow-glow-gold: 0 0 20px rgba(212, 175, 55, 0.2);
+  --shadow-glow-blue: 0 0 20px rgba(37, 99, 235, 0.15);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-main);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  line-height: 1.5;
+  background-image:
+    radial-gradient(at 0% 0%, rgba(15, 42, 74, 0.35) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(245, 158, 11, 0.08) 0px, transparent 50%);
+  background-attachment: fixed;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Utilities */
+.container {
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 0 24px;
+  width: 100%;
+}
+
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.glass-card:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-main);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #0b111e;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.45);
+  transform: translateY(-1px);
+}
+
+.btn-blue {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+}
+
+.btn-blue:hover {
+  background: linear-gradient(135deg, #60a5fa, #2563eb);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45);
+  transform: translateY(-1px);
+}
+
+.btn-emerald {
+  background: linear-gradient(135deg, #10b981, #047857);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+}
+
+.btn-emerald:hover {
+  background: linear-gradient(135deg, #34d399, #059669);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  background: transparent;
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.btn-outline:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--text-secondary);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-secondary);
+}
+
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: var(--radius-sm);
+}
+
+.btn-lg {
+  padding: 14px 28px;
+  font-size: 16px;
+  border-radius: var(--radius-md);
+}
+
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.badge-critical {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.badge-high {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.badge-medium {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.badge-low {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.badge-neutral {
+  background: rgba(148, 163, 184, 0.15);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.badge-purple {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.35);
+}
+
+/* Novix Solutions Developer Watermarks */
+.novix-watermark-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(168, 85, 247, 0.12));
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: 700;
+  color: #93c5fd;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.novix-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #3b82f6;
+  box-shadow: 0 0 8px #3b82f6;
+  animation: pulseGlow 2s infinite;
+}
+
+.novix-floating-badge {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 99;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 12px rgba(59, 130, 246, 0.2);
+  transition: all 0.25s ease;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.novix-floating-badge:hover {
+  transform: translateY(-2px);
+  border-color: #60a5fa;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), 0 0 16px rgba(59, 130, 246, 0.4);
+}
+
+.novix-footer-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: #60a5fa;
+  background: rgba(59, 130, 246, 0.08);
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  margin-top: 6px;
+  font-size: 11px;
+}
+
+/* =========================================================================
+   OFFICIAL SRI LANKA INLAND REVENUE DEPARTMENT (IRD) HEADER SYSTEM
+   ========================================================================= */
+.app-header-official {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  font-family: var(--font-main);
+}
+
+/* 1. Official Government of Sri Lanka Top Utility Bar */
+.gov-top-bar {
+  background: #250306;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.35);
+  color: #e2e8f0;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  font-size: 11.5px;
+}
+
+.gov-top-bar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.gov-identity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gov-flag-emblem {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.gov-state-text {
+  font-weight: 600;
+  color: #f8fafc;
+  letter-spacing: 0.3px;
+}
+
+.gov-meta-links {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.gov-link-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #cbd5e1;
+  text-decoration: none;
+  font-size: 11px;
+  transition: all 0.2s ease;
+}
+
+.gov-link-pill:hover {
+  color: #fde047;
+}
+
+.active-portal-pill {
+  background: rgba(212, 175, 55, 0.15);
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  color: #fde047;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.active-portal-pill:hover {
+  background: rgba(212, 175, 55, 0.3);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+}
+
+.gov-datetime {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.gov-lang-badges {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.lang-tag-btn {
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1.2;
+}
+
+.lang-tag-btn:hover {
+  background: rgba(212, 175, 55, 0.25);
+  border-color: #d4af37;
+  color: #fde047;
+}
+
+.lang-tag-btn.active {
+  background: #d4af37;
+  border-color: #ffd700;
+  color: #1a0406;
+  font-weight: 800;
+  box-shadow: 0 0 6px rgba(212, 175, 55, 0.4);
+}
+
+/* 2. Main Official IRD Branding Banner */
+.header-main-banner {
+  background: linear-gradient(135deg, #741016 0%, #54080d 50%, #3e0407 100%);
+  border-bottom: 2px solid #d4af37;
+  padding: 10px 0;
+}
+
+.header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-brand-official {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-brand-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.brand-text-official {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.trilingual-titles {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.title-sinhala {
+  font-family: 'Noto Sans Sinhala', sans-serif;
+  font-weight: 800;
+  color: #fde047;
+  font-size: 13.5px;
+  letter-spacing: 0.2px;
+}
+
+.title-divider {
+  color: rgba(253, 224, 71, 0.5);
+  font-size: 10px;
+}
+
+.title-tamil {
+  font-size: 11px;
+  color: #fef08a;
+  opacity: 0.9;
+}
+
+.title-english {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: #ffffff;
+}
+
+.system-identity {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.system-main-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.2px;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.system-badge-fru {
+  background: rgba(212, 175, 55, 0.2);
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  color: #fef08a;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.sec-law-tag {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #e2e8f0;
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Compact Side Officer Profile (Small Avatar DP + Name) */
+.officer-compact-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 10px 3px 4px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #ffffff;
+}
+
+.officer-compact-chip:hover {
+  background: rgba(0, 0, 0, 0.55);
+  border-color: #ffd700;
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
+}
+
+.officer-mini-dp {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: #1a0406;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10.5px;
+  font-weight: 800;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.officer-compact-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #f8fafc;
+  letter-spacing: 0.2px;
+}
+
+.compact-exit-btn {
+  padding: 5px 10px;
+  font-size: 11.5px;
+}
+
+/* Official IRD Button Styles */
+.btn-ird-gold {
+  background: linear-gradient(135deg, #d4af37 0%, #b45309 100%);
+  color: #1a0406;
+  font-weight: 700;
+  border: 1px solid #ffd700;
+  box-shadow: 0 2px 10px rgba(212, 175, 55, 0.35);
+}
+
+.btn-ird-gold:hover {
+  background: linear-gradient(135deg, #fde047 0%, #d4af37 100%);
+  box-shadow: 0 4px 16px rgba(212, 175, 55, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-ird-maroon {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+.btn-ird-maroon:hover {
+  background: rgba(0, 0, 0, 0.5);
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.theme-toggle-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.theme-toggle-btn:hover {
+  background: rgba(0, 0, 0, 0.5);
+  border-color: #f59e0b;
+}
+
+.btn-outline-danger {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+}
+
+.btn-outline-danger:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: #ef4444;
+  color: #ffffff;
+}
+
+/* 3. Official IRD Gazette & Compliance Alert Marquee Banner */
+.gov-alert-ticker {
+  background: #1b0305;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+  height: 34px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  font-size: 12px;
+}
+
+[data-theme='light'] .gov-alert-ticker {
+  background: #fef3c7;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.4);
+}
+
+.gov-alert-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.ticker-badge {
+  background: #741016;
+  border: 1px solid #d4af37;
+  color: #ffd700;
+  font-weight: 800;
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 14px;
+  flex-shrink: 0;
+  letter-spacing: 0.5px;
+}
+
+.ticker-pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 6px #22c55e;
+}
+
+.ticker-text-wrapper {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.ticker-content {
+  display: inline-block;
+  color: #cbd5e1;
+  animation: tickerScroll 38s linear infinite;
+}
+
+[data-theme='light'] .ticker-content {
+  color: #451a03;
+}
+
+.ticker-content strong {
+  color: #fde047;
+}
+
+[data-theme='light'] .ticker-content strong {
+  color: #741016;
+}
+
+.ticker-spacer {
+  margin: 0 16px;
+  color: #d4af37;
+}
+
+@keyframes tickerScroll {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.novix-credit-pill {
+  font-size: 10.5px;
+  color: #94a3b8;
+  padding: 2px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+
+[data-theme='light'] .novix-credit-pill {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #64748b;
+}
+
+/* Legacy app-header fallback if referenced */
+.app-header {
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(10, 14, 23, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+/* Step Bar */
+.step-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  margin: 20px 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.step-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+  position: relative;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+}
+
+.step-item.active {
+  color: var(--text-primary);
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.step-item.completed {
+  color: var(--accent-emerald);
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  background: #1e293b;
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+}
+
+.step-item.active .step-number {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #0b111e;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+}
+
+.step-item.completed .step-number {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.step-label-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+}
+
+.step-label-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: left;
+}
+
+.step-connector {
+  flex: 1;
+  height: 2px;
+  background: #1e293b;
+  margin: 0 12px;
+}
+
+/* Upload Dropzone */
+.dropzone-box {
+  border: 2px dashed rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius-lg);
+  padding: 48px 24px;
+  text-align: center;
+  background: rgba(245, 158, 11, 0.02);
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+
+.dropzone-box:hover,
+.dropzone-box.drag-active {
+  border-color: var(--accent-gold);
+  background: rgba(245, 158, 11, 0.06);
+  box-shadow: var(--shadow-glow-gold);
+}
+
+/* Metric Cards */
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.metric-card {
+  padding: 18px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+
+.metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--card-accent, #3b82f6);
+}
+
+.metric-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.metric-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metric-icon-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--card-accent, #3b82f6);
+}
+
+.metric-value {
+  font-size: 24px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+
+.metric-subtitle {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Data Table */
+.table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  position: relative;
+}
+
+.master-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: left;
+}
+
+.master-table th {
+  background: #0d1424;
+  padding: 12px 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.master-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.master-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.master-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.master-table tbody tr.row-selected {
+  background: rgba(245, 158, 11, 0.08);
+}
+
+/* Modal Overlay */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+  background: var(--bg-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Form Controls */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.form-control,
+.form-select {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-family: var(--font-main);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.2); }
+  50% { box-shadow: 0 0 25px rgba(245, 158, 11, 0.5); }
+}
+
+.pulse-glow {
+  animation: pulseGlow 2.5s infinite;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .step-nav {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .step-connector {
+    display: none;
+  }
+  .metric-grid {
+    grid-template-columns: 1fr;
+  }
+  .header-container {
+    height: auto;
+    padding: 14px 0;
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+/* ==========================================================================
+   Animated Startup Gateway & Password Protection Styles
+   ========================================================================== */
+.auth-gateway-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #090203; /* Deep Executive Black */
+  background-image:
+    radial-gradient(ellipse at 50% 25%, rgba(116, 16, 22, 0.5) 0%, transparent 68%),
+    radial-gradient(circle at 85% 85%, rgba(212, 175, 55, 0.12) 0%, transparent 50%),
+    linear-gradient(to bottom, #090203 0%, #0d0204 60%, #090203 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.auth-ambient-glow {
+  position: absolute;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(116, 16, 22, 0.35) 0%, transparent 70%);
+  filter: blur(60px);
+  pointer-events: none;
+  animation: ambientFloat 8s ease-in-out infinite alternate;
+}
+
+.auth-ambient-glow-2 {
+  position: absolute;
+  bottom: 10%;
+  right: 25%;
+  width: 450px;
+  height: 250px;
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.18) 0%, transparent 70%);
+  filter: blur(60px);
+  pointer-events: none;
+}
+
+.auth-gateway-container {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 680px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  animation: gatewayEntrance 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.auth-header-animated {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+}
+
+.auth-gov-subribbon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #cbd5e1;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 4px 14px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.gov-dot-gold {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f59e0b;
+  box-shadow: 0 0 8px #f59e0b;
+}
+
+.auth-ird-gov-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #fde047;
+  text-decoration: none;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(212, 175, 55, 0.15);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  margin-left: 4px;
+}
+
+.auth-ird-gov-link:hover {
+  background: rgba(212, 175, 55, 0.3);
+  color: #ffffff;
+}
+
+.auth-logo-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 6px 0;
+}
+
+.auth-logo-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.75)) drop-shadow(0 0 16px rgba(212, 175, 55, 0.2));
+}
+
+.auth-title-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.auth-trilingual-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.auth-trilingual-header.stacked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.auth-sinhala-lead {
+  font-family: 'Noto Sans Sinhala', sans-serif;
+  font-size: 16.5px;
+  font-weight: 800;
+  color: #fde047;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+}
+
+.auth-divider {
+  color: rgba(253, 224, 71, 0.4);
+  font-size: 10px;
+}
+
+.auth-tamil-lead {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fef08a;
+  opacity: 0.95;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+.auth-department-tag {
+  font-size: 11px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.auth-main-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+  margin: 0;
+  background: linear-gradient(180deg, #ffffff 0%, #fde047 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.8));
+}
+
+.auth-branch-stacked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  margin-top: 2px;
+}
+
+.auth-branch-si {
+  font-family: 'Noto Sans Sinhala', sans-serif;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #fde047;
+}
+
+.auth-branch-ta {
+  font-size: 12px;
+  font-weight: 600;
+  color: #e2e8f0;
+  opacity: 0.9;
+}
+
+.auth-sub-title {
+  font-size: 12.5px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.auth-legal-pill {
+  display: inline-block;
+  font-size: 10.5px;
+  color: #fde047;
+  background: rgba(212, 175, 55, 0.12);
+  padding: 3px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  margin-top: 4px;
+}
+
+.auth-card {
+  width: 100%;
+  background: linear-gradient(180deg, rgba(26, 4, 7, 0.95) 0%, rgba(12, 2, 4, 0.98) 100%);
+  border: 1.5px solid rgba(212, 175, 55, 0.4);
+  border-top: 3.5px solid #741016;
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 35px rgba(116, 16, 22, 0.35);
+}
+
+/* Cloud Database Status Bar */
+.auth-db-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: var(--radius-md);
+  padding: 6px 12px;
+  margin-bottom: 16px;
+}
+
+.auth-db-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.auth-db-badge.cloud-active {
+  color: #34d399;
+}
+
+.auth-db-badge.offline-mode {
+  color: #fbbf24;
+}
+
+.auth-db-guide-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #fde047;
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.auth-db-guide-btn:hover {
+  background: rgba(212, 175, 55, 0.25);
+  color: #ffffff;
+}
+
+.auth-success-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(16, 185, 129, 0.14);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: var(--radius-md);
+  color: #6ee7b7;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.auth-tab-bar {
+  display: flex;
+  background: rgba(8, 1, 2, 0.7);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  margin-bottom: 20px;
+}
+
+.auth-tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.auth-tab-btn:hover {
+  color: #fde047;
+}
+
+.auth-tab-btn.active {
+  background: linear-gradient(135deg, rgba(116, 16, 22, 0.6) 0%, rgba(212, 175, 55, 0.2) 100%);
+  border: 1px solid #d4af37;
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+}
+
+.auth-card .form-control {
+  background: rgba(14, 2, 3, 0.85);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  color: #ffffff;
+}
+
+.auth-card .form-control:focus {
+  border-color: #d4af37;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+  outline: none;
+}
+
+.auth-card .btn-primary {
+  background: linear-gradient(135deg, #741016 0%, #4a060a 100%);
+  border: 1.5px solid #d4af37;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 12px rgba(212, 175, 55, 0.25);
+}
+
+.auth-card .btn-primary:hover {
+  background: linear-gradient(135deg, #8f151c 0%, #5c080d 100%);
+  border-color: #ffd700;
+  color: #fef08a;
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.45);
+}
+
+.auth-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: var(--radius-md);
+  color: #f87171;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  animation: shake 0.3s ease-in-out;
+}
+
+.auth-footer-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+/* Gateway Animations */
+@keyframes gatewayEntrance {
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes emblemPulse {
+  0% {
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.25);
+  }
+  100% {
+    box-shadow: 0 0 40px rgba(245, 158, 11, 0.55), 0 0 60px rgba(59, 130, 246, 0.25);
+  }
+}
+
+@keyframes ambientFloat {
+  0% {
+    transform: translate(-50%, 0);
+  }
+  100% {
+    transform: translate(-50%, 30px);
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+/* =========================================================================
+   OFFICIAL GOVERNMENT FOOTER STYLING
+   ========================================================================= */
+.gov-official-footer {
+  border-top: 2px solid rgba(212, 175, 55, 0.3);
+  padding: 28px 0 32px 0;
+  background: var(--bg-card);
+  margin-top: auto;
+}
+
+[data-theme='light'] .gov-official-footer {
+  background: #ffffff;
+  border-top: 2px solid rgba(116, 16, 22, 0.2);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.03);
+}
+
+.gov-footer-links-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.gov-footer-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.gov-footer-link:hover {
+  color: var(--accent-gold);
+}
+
+.gov-footer-link.highlight {
+  color: #f59e0b;
+}
+
+.gov-footer-sep {
+  color: rgba(212, 175, 55, 0.5);
+  font-size: 10px;
+}
+
+/* =========================================================================
+   WELCOME INTRO GATEWAY UI (RED, BLACK, GOLD, WHITE MIX - OPEN FULL SCREEN)
+   ========================================================================= */
+.welcome-gateway-page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: #090203; /* Deep Executive Black */
+  background-image:
+    radial-gradient(ellipse at 50% 34%, rgba(116, 16, 22, 0.48) 0%, transparent 68%),
+    radial-gradient(circle at 85% 85%, rgba(212, 175, 55, 0.08) 0%, transparent 45%),
+    radial-gradient(circle at 15% 15%, rgba(116, 16, 22, 0.3) 0%, transparent 50%),
+    linear-gradient(to bottom, #090203 0%, #0d0204 50%, #090203 100%);
+  color: #ffffff;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Open Full-Screen Canvas (Zero box, Zero card, Zero enclosing borders) */
+.welcome-fullscreen-canvas {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 24px;
+  max-width: 960px;
+  margin: 0 auto;
+  width: 100%;
+  z-index: 5;
+  animation: welcomeFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes welcomeFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Large Prominent IRD Logo */
+.welcome-logo-grand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 26px;
+  filter: drop-shadow(0 14px 30px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 24px rgba(212, 175, 55, 0.22));
+  transition: transform 0.3s ease;
+}
+
+.welcome-logo-grand:hover {
+  transform: scale(1.03);
+}
+
+/* Department Name: Stacked in 3 distinct lines */
+.welcome-dept-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 22px;
+}
+
+.welcome-name-sinhala {
+  font-family: 'Noto Sans Sinhala', 'Segoe UI', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  color: #fde047; /* Sovereign Gold */
+  letter-spacing: 0.3px;
+  line-height: 1.35;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85);
+}
+
+.welcome-name-tamil {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #fef08a; /* Light Gold */
+  opacity: 0.95;
+  line-height: 1.3;
+  letter-spacing: 0.2px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+.welcome-dept-title {
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #ffffff; /* Crisp White */
+  text-transform: uppercase;
+  margin-top: 4px;
+  opacity: 0.9;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+}
+
+/* Branch / Unit Name: Stacked lines */
+.welcome-branch-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 30px;
+}
+
+.welcome-branch-title {
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  margin: 0;
+  line-height: 1.2;
+  color: #ffffff;
+  background: linear-gradient(180deg, #ffffff 0%, #fde047 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.8));
+}
+
+.welcome-branch-sinhala {
+  font-family: 'Noto Sans Sinhala', 'Segoe UI', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fde047; /* Sovereign Gold */
+  letter-spacing: 0.2px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+.welcome-branch-tamil {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e2e8f0; /* Crisp soft white */
+  letter-spacing: 0.2px;
+  opacity: 0.9;
+}
+
+/* Compact Access Officer Login Button */
+.welcome-action-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 6px;
+}
+
+.welcome-btn-compact {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 22px;
+  font-size: 12.5px;
+  font-weight: 700;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #741016 0%, #4a060a 100%); /* IRD Red */
+  border: 1.5px solid #d4af37; /* Gold */
+  color: #ffffff; /* White */
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), 0 0 14px rgba(212, 175, 55, 0.25);
+  text-decoration: none;
+}
+
+.welcome-btn-compact:hover {
+  background: linear-gradient(135deg, #8f151c 0%, #5c080d 100%);
+  border-color: #ffd700;
+  color: #fef08a;
+  box-shadow: 0 6px 22px rgba(212, 175, 55, 0.45);
+  transform: translateY(-2px);
+}
+
+.welcome-btn-compact:active {
+  transform: translateY(0);
+}
+
+/* Minimal Clean Footer */
+.welcome-minimal-footer {
+  text-align: center;
+  padding: 16px 20px 22px 20px;
+  font-size: 11.5px;
+  color: #94a3b8;
+  letter-spacing: 0.3px;
+  border-top: 1px solid rgba(212, 175, 55, 0.15);
+  background: rgba(0, 0, 0, 0.25);
+}

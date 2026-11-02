@@ -1,0 +1,111 @@
+# =========================================================================
+# IRD Sri Lanka - Forced Registration Master System (FRU)
+# Lightweight Local Offline Web Server for RAMIS Intranet Workstations
+# Requires: No Node.js, No Python, No Internet, No Administrator Privileges
+# =========================================================================
+
+$port = 5173
+$prefix = "http://localhost:$port/"
+$distFolder = Join-Path $PSScriptRoot "dist"
+
+if (-not (Test-Path $distFolder)) {
+    $distFolder = $PSScriptRoot
+}
+
+Write-Host "=========================================================================" -ForegroundColor Yellow
+Write-Host " DEPARTMENT OF INLAND REVENUE - SRI LANKA (FRU MASTER INTELLIGENCE)" -ForegroundColor Green
+Write-Host " RAMIS INTRANET / AIR-GAPPED AIR-TIGHT WORKSTATION DEPLOYMENT" -ForegroundColor Cyan
+Write-Host "=========================================================================" -ForegroundColor Yellow
+Write-Host " Local Offline Server Address: $prefix" -ForegroundColor White
+Write-Host " Web Content Directory: $distFolder" -ForegroundColor Gray
+Write-Host " Ready for RAMIS / Excel Audit Operations. DO NOT CLOSE THIS WINDOW." -ForegroundColor DarkYellow
+Write-Host " Press Ctrl+C or close this window to exit the application." -ForegroundColor DarkGray
+Write-Host "-------------------------------------------------------------------------"
+
+$listener = New-Object System.Net.HttpListener
+$listener.Prefixes.Add($prefix)
+
+try {
+    $listener.Start()
+} catch {
+    Write-Host "Port $port is currently in use. Trying alternate port 8080..." -ForegroundColor Yellow
+    $port = 8080
+    $prefix = "http://localhost:$port/"
+    $listener = New-Object System.Net.HttpListener
+    $listener.Prefixes.Add($prefix)
+    try {
+        $listener.Start()
+    } catch {
+        $port = 8888
+        $prefix = "http://localhost:$port/"
+        $listener = New-Object System.Net.HttpListener
+        $listener.Prefixes.Add($prefix)
+        $listener.Start()
+    }
+}
+
+# Automatically launch default browser (Edge / Chrome)
+try {
+    Start-Process $prefix
+} catch {
+    Write-Host "Please open your browser manually and visit: $prefix" -ForegroundColor Cyan
+}
+
+$mimeTypes = @{
+    ".html"   = "text/html; charset=utf-8"
+    ".htm"    = "text/html; charset=utf-8"
+    ".js"     = "application/javascript; charset=utf-8"
+    ".mjs"    = "application/javascript; charset=utf-8"
+    ".css"    = "text/css; charset=utf-8"
+    ".json"   = "application/json; charset=utf-8"
+    ".png"    = "image/png"
+    ".jpg"    = "image/jpeg"
+    ".jpeg"   = "image/jpeg"
+    ".svg"    = "image/svg+xml"
+    ".ico"    = "image/x-icon"
+    ".woff"   = "font/woff"
+    ".woff2"  = "font/woff2"
+    ".ttf"    = "font/ttf"
+    ".webp"   = "image/webp"
+}
+
+try {
+    while ($listener.IsListening) {
+        $context = $listener.GetContext()
+        $request = $context.Request
+        $response = $context.Response
+
+        $urlPath = $request.Url.LocalPath.TrimStart('/')
+        if ([string]::IsNullOrWhiteSpace($urlPath) -or $urlPath -eq '/') {
+            $urlPath = "index.html"
+        }
+
+        $decodedPath = [System.Uri]::UnescapeDataString($urlPath)
+        $targetFile = Join-Path $distFolder $decodedPath
+
+        # Single page application fallback
+        if (-not (Test-Path $targetFile -PathType Leaf)) {
+            $targetFile = Join-Path $distFolder "index.html"
+        }
+
+        if (Test-Path $targetFile -PathType Leaf) {
+            $ext = [System.IO.Path]::GetExtension($targetFile).ToLower()
+            $contentType = if ($mimeTypes.ContainsKey($ext)) { $mimeTypes[$ext] } else { "application/octet-stream" }
+            $response.ContentType = $contentType
+            $response.Headers.Add("Cache-Control", "no-cache, no-store, must-revalidate")
+            $response.Headers.Add("Access-Control-Allow-Origin", "*")
+
+            $bytes = [System.IO.File]::ReadAllBytes($targetFile)
+            $response.ContentLength64 = $bytes.Length
+            $response.OutputStream.Write($bytes, 0, $bytes.Length)
+        } else {
+            $response.StatusCode = 404
+        }
+
+        $response.Close()
+    }
+} finally {
+    if ($listener.IsListening) {
+        $listener.Stop()
+    }
+}

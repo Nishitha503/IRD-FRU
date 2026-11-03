@@ -54,8 +54,12 @@ export async function parseExcelFile(file) {
           };
         });
 
+        const displayName = file._folderPath || file.webkitRelativePath || file.name;
+
         resolve({
-          fileName: file.name,
+          fileName: displayName,
+          baseName: file.name,
+          folderPath: file._folderPath || file.webkitRelativePath || '',
           sheetNames,
           sheetsData,
         });
@@ -131,6 +135,8 @@ export async function parseMultipleExcelFiles(fileList) {
 
     filesSummary.push({
       name: res.fileName,
+      baseName: origFile.name,
+      folderPath: origFile._folderPath || origFile.webkitRelativePath || '',
       size: origFile.size,
       sheets: res.sheetNames,
       totalRows: fileTotalRows,

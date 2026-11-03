@@ -158,7 +158,8 @@ export default function App() {
       const uniqueFiles = [];
       const seen = new Set();
       for (const f of combined) {
-        const key = `${f.name}_${f.size}`;
+        const pathIdent = f._folderPath || f.webkitRelativePath || f.name;
+        const key = `${pathIdent}_${f.size}`;
         if (!seen.has(key)) {
           seen.add(key);
           uniqueFiles.push(f);

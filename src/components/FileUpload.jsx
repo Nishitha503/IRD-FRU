@@ -14,8 +14,12 @@ import {
   Trash2,
   Files,
   FileText,
+  Folder,
+  FolderOpen,
+  FolderPlus,
 } from 'lucide-react';
 import { getTranslation } from '../utils/translations';
+import { extractFilesFromDataTransfer, filterExcelAndCsvFiles } from '../utils/folderScanner';
 
 export default function FileUpload({
   onFilesUploaded,
@@ -32,6 +36,8 @@ export default function FileUpload({
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
   const appendFileInputRef = useRef(null);
+  const folderInputRef = useRef(null);
+  const appendFolderInputRef = useRef(null);
   const t = getTranslation(language);
 
   // Normalized handler that supports both onFilesUploaded and onFileUploaded
@@ -53,18 +59,39 @@ export default function FileUpload({
     setIsDragging(false);
   };
 
-  const handleDrop = (e) => {
+  const handleDrop = async (e) => {
     e.preventDefault();
     setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      triggerFilesUpload(e.dataTransfer.files, false);
+    try {
+      const extracted = await extractFilesFromDataTransfer(e.dataTransfer);
+      if (extracted && extracted.length > 0) {
+        triggerFilesUpload(extracted, false);
+      } else {
+        alert('No valid Excel (.xlsx, .xls) or CSV files found in the dropped folder(s)/files.');
+      }
+    } catch (err) {
+      console.error('Folder/file drop extraction error:', err);
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        triggerFilesUpload(e.dataTransfer.files, false);
+      }
     }
   };
 
   const handleFileChange = (e, append = false) => {
     if (e.target.files && e.target.files.length > 0) {
       triggerFilesUpload(e.target.files, append);
-      // Reset input value so same files can be re-selected if needed
+      e.target.value = '';
+    }
+  };
+
+  const handleFolderChange = (e, append = false) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const validFiles = filterExcelAndCsvFiles(e.target.files);
+      if (validFiles.length > 0) {
+        triggerFilesUpload(validFiles, append);
+      } else {
+        alert('The selected folder does not contain any valid Excel (.xlsx, .xls) or CSV files.');
+      }
       e.target.value = '';
     }
   };
@@ -79,7 +106,7 @@ export default function FileUpload({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Hidden File Inputs */}
+      {/* Hidden File Inputs for Standard Multiple Files Selection */}
       <input
         type="file"
         ref={fileInputRef}
@@ -97,7 +124,27 @@ export default function FileUpload({
         style={{ display: 'none' }}
       />
 
-      {/* 1. Main FRU Multi-File Batch Dropzone */}
+      {/* Hidden File Inputs for Folder / Directory Selection (webkitdirectory) */}
+      <input
+        type="file"
+        ref={folderInputRef}
+        onChange={(e) => handleFolderChange(e, false)}
+        webkitdirectory=""
+        directory=""
+        multiple
+        style={{ display: 'none' }}
+      />
+      <input
+        type="file"
+        ref={appendFolderInputRef}
+        onChange={(e) => handleFolderChange(e, true)}
+        webkitdirectory=""
+        directory=""
+        multiple
+        style={{ display: 'none' }}
+      />
+
+      {/* 1. Main FRU Multi-File & Multi-Folder Batch Dropzone */}
       <div
         className={`dropzone-box glass-card ${isDragging ? 'drag-active' : ''}`}
         onDragOver={handleDragOver}
@@ -132,7 +179,8 @@ export default function FileUpload({
             </p>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '4px' }}>
+          {/* Action Trigger Buttons: Browse Files OR Select Folder(s) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
             <button
               type="button"
               className="btn btn-ird-gold btn-sm"
@@ -140,24 +188,59 @@ export default function FileUpload({
                 e.stopPropagation();
                 fileInputRef.current && fileInputRef.current.click();
               }}
+              style={{ fontWeight: 700 }}
             >
               <Files size={15} />
               <span>{t.uploadButtonText}</span>
             </button>
+
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                folderInputRef.current && folderInputRef.current.click();
+              }}
+              style={{ borderColor: 'rgba(212, 175, 55, 0.6)', color: '#fde047', fontWeight: 700 }}
+              title="Select an entire folder containing Excel/CSV files"
+            >
+              <FolderOpen size={15} />
+              <span>{t.uploadFolderBtn}</span>
+            </button>
+
             <span className="badge badge-neutral" style={{ fontSize: '11px', padding: '6px 12px' }}>
               {t.supportedFormats}
             </span>
           </div>
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px', justifyContent: 'center' }}>
+          {/* Folder Drag & Drop Explanatory Badge */}
+          <div
+            style={{
+              fontSize: '12px',
+              color: '#6ee7b7',
+              background: 'rgba(16, 185, 129, 0.09)',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              padding: '6px 14px',
+              borderRadius: '20px',
+              marginTop: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <Folder size={14} color="#34d399" />
+            <span>{t.folderDropHint}</span>
+          </div>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px', justifyContent: 'center' }}>
             <span className="badge badge-low" style={{ fontSize: '11px' }}>
               <ShieldCheck size={12} /> 100% Client-Side Secure
             </span>
             <span className="badge badge-neutral" style={{ fontSize: '11px' }}>
-              Multi-File Batch Aggregator
+              Multi-Folder & Subfolder Scanner
             </span>
             <span className="badge badge-neutral" style={{ fontSize: '11px' }}>
-              Automated NIC / BRN Normalizer
+              Multi-File Batch Aggregator
             </span>
             <span className="badge badge-neutral" style={{ fontSize: '11px' }}>
               Section 102 Compliant
@@ -212,7 +295,7 @@ export default function FileUpload({
             </div>
 
             {/* Action Buttons */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <button
                 type="button"
                 onClick={() => appendFileInputRef.current && appendFileInputRef.current.click()}
@@ -222,6 +305,17 @@ export default function FileUpload({
               >
                 <Plus size={14} />
                 <span>{t.addMoreFiles}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => appendFolderInputRef.current && appendFolderInputRef.current.click()}
+                className="btn btn-outline btn-sm"
+                style={{ borderColor: 'rgba(59, 130, 246, 0.5)', color: '#93c5fd', fontWeight: 700 }}
+                title="Add another folder containing Excel files to this batch"
+              >
+                <FolderPlus size={14} />
+                <span>{t.addMoreFolders}</span>
               </button>
 
               <button
@@ -273,7 +367,11 @@ export default function FileUpload({
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                      <FileSpreadsheet size={16} color="#fde047" style={{ flexShrink: 0 }} />
+                      {fileItem.folderPath ? (
+                        <Folder size={16} color="#60a5fa" style={{ flexShrink: 0 }} />
+                      ) : (
+                        <FileSpreadsheet size={16} color="#fde047" style={{ flexShrink: 0 }} />
+                      )}
                       <div style={{ minWidth: 0 }}>
                         <div
                           style={{
@@ -286,7 +384,22 @@ export default function FileUpload({
                           }}
                           title={fileItem.name}
                         >
-                          {fileItem.name}
+                          {fileItem.folderPath && fileItem.folderPath.includes('/') && (
+                            <span
+                              style={{
+                                fontSize: '10px',
+                                background: 'rgba(59, 130, 246, 0.2)',
+                                color: '#93c5fd',
+                                padding: '1px 5px',
+                                borderRadius: '4px',
+                                fontWeight: 600,
+                                marginRight: '5px',
+                              }}
+                            >
+                              📁 {fileItem.folderPath.split('/')[0]}
+                            </span>
+                          )}
+                          <span>{fileItem.baseName || fileItem.name}</span>
                         </div>
                         <div style={{ fontSize: '10.5px', color: '#94a3b8' }}>
                           {fileItem.totalRows?.toLocaleString() || 0} rows • {formatFileSize(fileItem.size)}

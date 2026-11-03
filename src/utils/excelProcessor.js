@@ -279,7 +279,7 @@ export function exportMasterExcelFile(
     return rowObj;
   });
   const wsMaster = XLSX.utils.json_to_sheet(masterData);
-  XLSX.utils.book_append_sheet(wb, wsMaster, '1. Master Register (Original)');
+  XLSX.utils.book_append_sheet(wb, wsMaster, '1. Master Register');
 
   // Tab 2: Individual Source Rows with IRD Audit Flags (if rawRows available)
   if (rawRows && rawRows.length > 0) {
@@ -335,7 +335,7 @@ export function exportMasterExcelFile(
       'Action Required': r.primaryAction,
     }));
   const wsHighRisk = XLSX.utils.json_to_sheet(highRiskData);
-  XLSX.utils.book_append_sheet(wb, wsHighRisk, '3. Actionable Forced Notices');
+  XLSX.utils.book_append_sheet(wb, wsHighRisk, '3. Actionable Notices');
 
   // Tab 4: VAT & SSCL Commercial Threshold Breaches
   const vatData = records

@@ -9,6 +9,7 @@ import {
   Calendar,
   Globe,
   History,
+  Share2,
 } from 'lucide-react';
 import { IRDCrest } from './OfficialEmblem';
 import { getTranslation } from '../utils/translations';
@@ -18,6 +19,7 @@ export default function Header({
   setDarkMode,
   onOpenRules,
   onOpenTinHistory,
+  onOpenSharedFolder,
   activeOfficer,
   onOpenUserProfiles,
   onLogout,
@@ -183,6 +185,26 @@ export default function Header({
 
           {/* Clean & Compact Action Controls */}
           <div className="header-actions">
+            {/* Shared Folder / LAN Historical Repository */}
+            {onOpenSharedFolder && (
+              <button
+                type="button"
+                onClick={onOpenSharedFolder}
+                className="btn btn-outline btn-sm"
+                style={{
+                  fontSize: '11.5px',
+                  borderColor: 'rgba(59, 130, 246, 0.45)',
+                  color: '#93c5fd',
+                  gap: '5px',
+                  fontWeight: 700,
+                }}
+                title="Shared Network Folder & 6-Month Historical Repository (LAN Sync)"
+              >
+                <Share2 size={13} />
+                <span>{language === 'si' ? 'Shared Folder' : language === 'ta' ? 'பகிர்வு கோப்புறை' : 'Shared Folder'}</span>
+              </button>
+            )}
+
             {/* TIN 6-Month History & Audit Investigation Tracker */}
             {onOpenTinHistory && (
               <button

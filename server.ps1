@@ -75,6 +75,89 @@ try {
         $request = $context.Request
         $response = $context.Response
 
+        # -------------------------------------------------------------
+        # Handle Shared Folder REST API Endpoints for LAN / Network sync
+        # -------------------------------------------------------------
+        if ($request.Url.LocalPath.StartsWith("/api/shared-folder")) {
+            $response.ContentType = "application/json; charset=utf-8"
+            $response.Headers.Add("Access-Control-Allow-Origin", "*")
+            $response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            $response.Headers.Add("Access-Control-Allow-Headers", "Content-Type")
+
+            if ($request.HttpMethod -eq "OPTIONS") {
+                $response.StatusCode = 200
+                $response.Close()
+                continue
+            }
+
+            $sharedRepoFolder = $global:SharedFolderPath
+            if ([string]::IsNullOrWhiteSpace($sharedRepoFolder)) {
+                $sharedRepoFolder = Join-Path ([Environment]::GetFolderPath("Desktop")) "IRD_SHARED_REPOSITORY"
+            }
+            if (-not (Test-Path $sharedRepoFolder)) {
+                New-Item -ItemType Directory -Path $sharedRepoFolder -Force | Out-Null
+            }
+            $historyFile = Join-Path $sharedRepoFolder "ird_fru_history_master.json"
+
+            if ($request.Url.LocalPath -eq "/api/shared-folder/status") {
+                $exists = Test-Path $historyFile
+                $cnt = 0
+                if ($exists) {
+                    try {
+                        $rawContent = [System.IO.File]::ReadAllText($historyFile)
+                        $parsed = $rawContent | ConvertFrom-Json
+                        $cnt = $parsed.Count
+                    } catch {}
+                }
+                $statusObj = @{
+                    isLinked = $true
+                    folderPath = $sharedRepoFolder
+                    totalTransactions = $cnt
+                    historyFileExists = $exists
+                }
+                $jsonBytes = [System.Text.Encoding]::UTF8.GetBytes(($statusObj | ConvertTo-Json))
+                $response.OutputStream.Write($jsonBytes, 0, $jsonBytes.Length)
+            }
+            elseif ($request.Url.LocalPath -eq "/api/shared-folder/load") {
+                if (Test-Path $historyFile) {
+                    $bytes = [System.IO.File]::ReadAllBytes($historyFile)
+                    $response.OutputStream.Write($bytes, 0, $bytes.Length)
+                } else {
+                    $emptyBytes = [System.Text.Encoding]::UTF8.GetBytes("[]")
+                    $response.OutputStream.Write($emptyBytes, 0, $emptyBytes.Length)
+                }
+            }
+            elseif ($request.Url.LocalPath -eq "/api/shared-folder/save" -and $request.HttpMethod -eq "POST") {
+                $reader = New-Object System.IO.StreamReader($request.InputStream, $request.ContentEncoding)
+                $body = $reader.ReadToEnd()
+                $parsed = $body | ConvertFrom-Json
+                if ($parsed.transactions) {
+                    $jsonStr = $parsed.transactions | ConvertTo-Json -Depth 10
+                    [System.IO.File]::WriteAllText($historyFile, $jsonStr, [System.Text.Encoding]::UTF8)
+                }
+                $resObj = @{ success = $true; saved = $true; path = $historyFile }
+                $jsonBytes = [System.Text.Encoding]::UTF8.GetBytes(($resObj | ConvertTo-Json))
+                $response.OutputStream.Write($jsonBytes, 0, $jsonBytes.Length)
+            }
+            elseif ($request.Url.LocalPath -eq "/api/shared-folder/config" -and $request.HttpMethod -eq "POST") {
+                $reader = New-Object System.IO.StreamReader($request.InputStream, $request.ContentEncoding)
+                $body = $reader.ReadToEnd()
+                $parsed = $body | ConvertFrom-Json
+                if ($parsed.folderPath) {
+                    $global:SharedFolderPath = $parsed.folderPath
+                    if (-not (Test-Path $global:SharedFolderPath)) {
+                        New-Item -ItemType Directory -Path $global:SharedFolderPath -Force | Out-Null
+                    }
+                }
+                $resObj = @{ success = $true; folderPath = $global:SharedFolderPath }
+                $jsonBytes = [System.Text.Encoding]::UTF8.GetBytes(($resObj | ConvertTo-Json))
+                $response.OutputStream.Write($jsonBytes, 0, $jsonBytes.Length)
+            }
+
+            $response.Close()
+            continue
+        }
+
         $urlPath = $request.Url.LocalPath.TrimStart('/')
         if ([string]::IsNullOrWhiteSpace($urlPath) -or $urlPath -eq '/') {
             $urlPath = "index.html"

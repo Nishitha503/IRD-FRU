@@ -13,6 +13,7 @@ import AuthGateway from './components/AuthGateway';
 import WelcomeGateway from './components/WelcomeGateway';
 import ExportPanel from './components/ExportPanel';
 import TinHistoryModal from './components/TinHistoryModal';
+import SharedFolderModal from './components/SharedFolderModal';
 
 import { parseExcelFile, parseMultipleExcelFiles, autoDetectColumnMapping } from './utils/excelProcessor';
 import { analyzeRawData, DEFAULT_RULES } from './utils/ruleEngine';
@@ -26,6 +27,7 @@ import {
   setAuthenticationSession,
 } from './utils/userManagement';
 import { fetchCloudOfficerProfiles } from './services/authDatabaseService';
+import { archiveRecordsToSharedFolder } from './services/sharedFolderService';
 
 export default function App() {
   const [darkMode, setDarkMode] = useState(true);
@@ -79,6 +81,7 @@ export default function App() {
   const [selectedRecordForNotice, setSelectedRecordForNotice] = useState(null);
   const [isTinHistoryOpen, setIsTinHistoryOpen] = useState(false);
   const [selectedTinForHistory, setSelectedTinForHistory] = useState('');
+  const [isSharedFolderModalOpen, setIsSharedFolderModalOpen] = useState(false);
 
   const handleOpenTinHistory = (tinToSearch = '') => {
     setSelectedTinForHistory(typeof tinToSearch === 'string' ? tinToSearch : '');
@@ -242,6 +245,10 @@ export default function App() {
         const { records, summary } = analyzeRawData(rawRows, columnMapping, rules, availableHeaders);
         setMasterRecords(records);
         setAnalysisSummary(summary);
+        // Automatically archive and persist to Shared Folder & IndexedDB history store
+        archiveRecordsToSharedFolder(records, activeOfficer).catch((archiveErr) => {
+          console.warn('Auto shared folder archive notice:', archiveErr);
+        });
         setCurrentStep(3);
         setMaxStepAllowed(4);
       } catch (err) {
@@ -333,6 +340,7 @@ export default function App() {
         setDarkMode={setDarkMode}
         onOpenRules={() => setIsRulesModalOpen(true)}
         onOpenTinHistory={() => handleOpenTinHistory()}
+        onOpenSharedFolder={() => setIsSharedFolderModalOpen(true)}
         hasData={masterRecords.length > 0}
         recordCount={masterRecords.length}
         activeOfficer={activeOfficer}
@@ -475,6 +483,14 @@ export default function App() {
         onClose={() => setIsTinHistoryOpen(false)}
         records={masterRecords}
         initialTin={selectedTinForHistory}
+        activeOfficer={activeOfficer}
+        language={language}
+      />
+
+      <SharedFolderModal
+        isOpen={isSharedFolderModalOpen}
+        onClose={() => setIsSharedFolderModalOpen(false)}
+        records={masterRecords}
         activeOfficer={activeOfficer}
         language={language}
       />

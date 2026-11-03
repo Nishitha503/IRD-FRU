@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Search,
   Calendar,
@@ -17,12 +17,20 @@ import {
   Coins,
   History,
   Tag,
+  Share2,
+  Folder,
+  Database,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { getTranslation } from '../utils/translations';
 import { IRDCrest } from './OfficialEmblem';
+import {
+  loadTransactionsFromIndexedDB,
+  query6MonthTransactions,
+  getSharedFolderConfig,
+} from '../services/sharedFolderService';
 
 /**
  * Normalizes various date representations (ISO, DD/MM/YYYY, Excel serial, etc.) into a JavaScript Date object
@@ -72,8 +80,49 @@ export default function TinHistoryModal({
   const t = getTranslation(language);
   const [inputTin, setInputTin] = useState(initialTin || '');
   const [selectedRange, setSelectedRange] = useState('6M'); // '1M' | '3M' | '6M' | 'ALL'
+  const [sharedHistoricalTxs, setSharedHistoricalTxs] = useState([]);
+  const [allHistoricalEntities, setAllHistoricalEntities] = useState([]);
+  const [sharedFolderCfg, setSharedFolderCfg] = useState(() => getSharedFolderConfig());
 
-  // Extract all unique TINs present in currently loaded master records for autocomplete
+  // Load cumulative entities from shared repository when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setSharedFolderCfg(getSharedFolderConfig());
+      loadTransactionsFromIndexedDB().then((stored) => {
+        if (stored && stored.length > 0) {
+          const map = new Map();
+          stored.forEach((item) => {
+            const key = item.tin || item.nic || item.recordRefId;
+            if (key && !map.has(key)) {
+              map.set(key, {
+                tin: item.tin || '',
+                nic: item.nic || '',
+                id: item.recordRefId || key,
+                name: item.name || `Taxpayer (${key})`,
+                district: item.district || '',
+                regionalOffice: item.regionalOffice || '',
+                primaryAgency: item.agency || 'Shared Repository',
+              });
+            }
+          });
+          setAllHistoricalEntities(Array.from(map.values()));
+        }
+      });
+    }
+  }, [isOpen]);
+
+  // Query 6-month historical transactions from Shared Folder + Active Session
+  useEffect(() => {
+    if (inputTin.trim()) {
+      query6MonthTransactions(inputTin.trim(), records).then((txs) => {
+        setSharedHistoricalTxs(txs);
+      });
+    } else {
+      setSharedHistoricalTxs([]);
+    }
+  }, [inputTin, records]);
+
+  // Extract all unique TINs present in currently loaded master records + shared history
   const availableTins = useMemo(() => {
     const tinMap = new Map();
     records.forEach((r) => {
@@ -81,23 +130,56 @@ export default function TinHistoryModal({
         tinMap.set(r.tin.trim(), `${r.tin.trim()} - ${r.name}`);
       }
     });
+    allHistoricalEntities.forEach((e) => {
+      if (e.tin && e.tin.trim() && !tinMap.has(e.tin.trim())) {
+        tinMap.set(e.tin.trim(), `${e.tin.trim()} - ${e.name} [Shared Archive]`);
+      }
+    });
     return Array.from(tinMap.entries()).map(([tin, label]) => ({ tin, label }));
-  }, [records]);
+  }, [records, allHistoricalEntities]);
 
-  // Find matching taxpayer entity
+  // Find matching taxpayer entity from current session or shared history
   const matchedRecord = useMemo(() => {
     if (!inputTin.trim()) return null;
     const clean = inputTin.trim().toLowerCase();
-    return (
-      records.find(
-        (r) =>
-          (r.tin && r.tin.toLowerCase() === clean) ||
-          r.nic.toLowerCase() === clean ||
-          r.id.toLowerCase() === clean ||
-          (r.brn && r.brn.toLowerCase() === clean)
-      ) || null
+
+    // 1. Current active records
+    const inSession = records.find(
+      (r) =>
+        (r.tin && r.tin.toLowerCase() === clean) ||
+        r.nic.toLowerCase() === clean ||
+        r.id.toLowerCase() === clean ||
+        (r.brn && r.brn.toLowerCase() === clean)
     );
-  }, [records, inputTin]);
+    if (inSession) {
+      if (sharedHistoricalTxs.length > 0) {
+        return {
+          ...inSession,
+          transactions: sharedHistoricalTxs,
+        };
+      }
+      return inSession;
+    }
+
+    // 2. Shared folder historical entities
+    const fromHistory = allHistoricalEntities.find(
+      (e) =>
+        (e.tin && e.tin.toLowerCase() === clean) ||
+        (e.nic && e.nic.toLowerCase() === clean) ||
+        (e.id && e.id.toLowerCase() === clean)
+    );
+    if (fromHistory) {
+      return {
+        ...fromHistory,
+        totalTurnover: sharedHistoricalTxs.reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0),
+        transactionCount: sharedHistoricalTxs.length,
+        transactions: sharedHistoricalTxs,
+        hasTIN: Boolean(fromHistory.tin),
+      };
+    }
+
+    return null;
+  }, [records, inputTin, allHistoricalEntities, sharedHistoricalTxs]);
 
   // Compute reference benchmark date (latest transaction date or today)
   const referenceDate = useMemo(() => {
@@ -328,6 +410,23 @@ export default function TinHistoryModal({
           >
             <X size={16} />
           </button>
+        </div>
+
+        {/* Shared Repository Sync Status Pill */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', padding: '6px 14px', background: 'rgba(212, 175, 55, 0.08)', borderRadius: '8px', border: '1px solid rgba(212, 175, 55, 0.25)', marginBottom: '14px', fontSize: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: sharedFolderCfg.isLinked ? '#34d399' : '#fde047' }}></span>
+            <span style={{ fontWeight: 600, color: '#f8fafc' }}>
+              Shared Repository: <strong style={{ color: '#fde047' }}>{sharedFolderCfg.folderName || 'Local LAN Cache'}</strong>
+            </span>
+            <span style={{ color: 'var(--text-muted)' }}>•</span>
+            <span style={{ color: '#93c5fd' }}>
+              {allHistoricalEntities.length} entities • {sharedHistoricalTxs.length > 0 ? `${sharedHistoricalTxs.length} historical transactions found for this TIN` : 'Past 6-Month Cross-Agency Archive'}
+            </span>
+          </div>
+          <span style={{ fontSize: '11px', color: '#10b981', fontWeight: 700 }}>
+            LAN / Shared Folder Synced
+          </span>
         </div>
 
         {/* Search & Filter Bar */}

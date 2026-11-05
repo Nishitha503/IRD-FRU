@@ -21,7 +21,79 @@ const SYNONYMS = {
 };
 
 /**
- * Read uploaded file (ArrayBuffer or File) and return sheets & data
+ * Clean and normalize a header string by trimming whitespace and stripping non-printable chars
+ */
+export function cleanHeaderName(h) {
+  if (h === null || h === undefined) return '';
+  return String(h)
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Determine if a column is a ghost, blank, or SheetJS placeholder column (e.g. __EMPTY, _1)
+ */
+export function isGhostOrEmptyColumn(h) {
+  if (!h) return true;
+  const s = String(h).trim();
+  if (s === '') return true;
+  if (/^__EMPTY(_\d+)?$/i.test(s)) return true;
+  if (/^_\d+$/.test(s)) return true;
+  return false;
+}
+
+/**
+ * Normalize a column string for comparison (removes spaces, punctuation, underscores)
+ */
+export function normalizeKey(s) {
+  return String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+/**
+ * Smart synonym comparison with length-aware word boundary safety
+ */
+export function matchesSynonym(header, synonym) {
+  const h = normalizeKey(header);
+  const s = normalizeKey(synonym);
+  if (!h || !s) return false;
+  if (h === s) return true;
+  if (s.length <= 3) {
+    return h === s || h.startsWith(s + '_') || h.endsWith('_' + s) || h === (s + 'no') || h === (s + 'number');
+  }
+  return h.includes(s) || (s.length > 5 && s.includes(h));
+}
+
+/**
+ * Find matching base column from the Master Schema for an incoming column
+ */
+export function findMatchingBaseColumn(incomingCol, baseColumns = []) {
+  const cleanIncoming = cleanHeaderName(incomingCol);
+  if (!cleanIncoming || isGhostOrEmptyColumn(cleanIncoming)) return null;
+
+  // 1. Exact case-insensitive match
+  const exact = baseColumns.find((b) => cleanHeaderName(b).toLowerCase() === cleanIncoming.toLowerCase());
+  if (exact) return exact;
+
+  // 2. Normalized alphanumeric match
+  const normIn = normalizeKey(cleanIncoming);
+  const normMatch = baseColumns.find((b) => normalizeKey(b) === normIn);
+  if (normMatch) return normMatch;
+
+  // 3. Synonym dictionary matching
+  for (const [concept, list] of Object.entries(SYNONYMS)) {
+    const inMatchesConcept = list.some((s) => matchesSynonym(cleanIncoming, s));
+    if (inMatchesConcept) {
+      const baseMatch = baseColumns.find((b) => list.some((s) => matchesSynonym(b, s)));
+      if (baseMatch) return baseMatch;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Read uploaded file (ArrayBuffer or File) and return sanitized sheets & data
  */
 export async function parseExcelFile(file) {
   return new Promise((resolve, reject) => {
@@ -37,20 +109,64 @@ export async function parseExcelFile(file) {
 
         sheetNames.forEach((sheetName) => {
           const worksheet = workbook.Sheets[sheetName];
-          // Get headers and rows as JSON objects
-          const rows = XLSX.utils.sheet_to_json(worksheet, { defval: '', raw: false });
-          // Get raw header list
+          // Get raw rows as JSON objects
+          const rawRows = XLSX.utils.sheet_to_json(worksheet, { defval: '', raw: false });
+
+          // Get decoded range
           const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:A1');
-          const headers = [];
+          const rawHeaderList = [];
           for (let C = range.s.c; C <= range.e.c; ++C) {
             const cell = worksheet[XLSX.utils.encode_cell({ r: range.s.r, c: C })];
-            if (cell && cell.v) headers.push(String(cell.v).trim());
+            const val = cell && cell.v !== undefined && cell.v !== null ? cleanHeaderName(cell.v) : '';
+            if (val && !isGhostOrEmptyColumn(val)) {
+              rawHeaderList.push(val);
+            }
           }
 
+          // Also check keys in rawRows[0] if rawHeaderList is empty
+          let headers = rawHeaderList;
+          if (headers.length === 0 && rawRows.length > 0) {
+            headers = Object.keys(rawRows[0])
+              .map(cleanHeaderName)
+              .filter((k) => !isGhostOrEmptyColumn(k));
+          }
+
+          // Deduplicate headers while preserving order
+          const seenHeaders = new Set();
+          const cleanHeaders = [];
+          headers.forEach((h) => {
+            if (!seenHeaders.has(h)) {
+              seenHeaders.add(h);
+              cleanHeaders.push(h);
+            }
+          });
+
+          // Sanitize every row: remove ghost columns and trim header keys
+          const sanitizedRows = [];
+          rawRows.forEach((r) => {
+            const cleanRow = {};
+            let hasAnyData = false;
+
+            Object.entries(r).forEach(([k, v]) => {
+              const cleanK = cleanHeaderName(k);
+              if (!isGhostOrEmptyColumn(cleanK)) {
+                cleanRow[cleanK] = v !== undefined && v !== null ? v : '';
+                if (String(cleanRow[cleanK]).trim() !== '') {
+                  hasAnyData = true;
+                }
+              }
+            });
+
+            // Discard completely empty trailing or formatted rows
+            if (hasAnyData) {
+              sanitizedRows.push(cleanRow);
+            }
+          });
+
           sheetsData[sheetName] = {
-            headers: headers.length > 0 ? headers : (rows.length > 0 ? Object.keys(rows[0]) : []),
-            rows,
-            rowCount: rows.length,
+            headers: cleanHeaders,
+            rows: sanitizedRows,
+            rowCount: sanitizedRows.length,
           };
         });
 
@@ -76,8 +192,15 @@ export async function parseExcelFile(file) {
 /**
  * Read and process multiple uploaded files (Excel / CSV)
  * Creates individual file sheets as well as a master consolidated merged dataset
+ * Intelligently harmonizes column schemas across files so zero duplicate/extra columns are spawned
  */
-export async function parseMultipleExcelFiles(fileList) {
+export async function parseMultipleExcelFiles(fileList, options = {}) {
+  const {
+    strictBaseSchema = true, // When true, aligns all subsequent files strictly to File 1's columns
+    includeSourceFile = false, // When false, does not create an extra _Source_File column
+    excludedColumns = [],
+  } = options;
+
   const files = Array.from(fileList || []);
   if (files.length === 0) throw new Error('No files provided');
 
@@ -86,6 +209,15 @@ export async function parseMultipleExcelFiles(fileList) {
   // If only 1 file uploaded
   if (fileResults.length === 1) {
     const single = fileResults[0];
+    const excludedSet = new Set(excludedColumns || []);
+    if (excludedSet.size > 0) {
+      Object.keys(single.sheetsData).forEach((sName) => {
+        const s = single.sheetsData[sName];
+        s.headers = s.headers.filter((h) => !excludedSet.has(h));
+      });
+    }
+
+    const firstHeaders = Object.values(single.sheetsData)[0]?.headers || [];
     return {
       ...single,
       isMultiFile: false,
@@ -95,9 +227,18 @@ export async function parseMultipleExcelFiles(fileList) {
           size: files[0].size,
           sheets: single.sheetNames,
           totalRows: Object.values(single.sheetsData).reduce((sum, s) => sum + s.rowCount, 0),
+          columnsCount: firstHeaders.length,
         },
       ],
       allFiles: fileResults,
+      baseColumns: firstHeaders,
+      extraColumnsDiscovered: [],
+      harmonizedStats: {
+        baseColumnsCount: firstHeaders.length,
+        finalColumnsCount: firstHeaders.length,
+        extraColumnsEliminated: 0,
+        strictBaseSchema,
+      },
     };
   }
 
@@ -106,8 +247,18 @@ export async function parseMultipleExcelFiles(fileList) {
   const sheetsData = {};
   const filesSummary = [];
 
+  // Determine Base Schema from File 1 (first sheet of first file)
+  const firstFile = fileResults[0];
+  const firstSheetName = firstFile.sheetNames[0];
+  const rawBaseHeaders = firstFile.sheetsData[firstSheetName]?.headers || [];
+  const baseHeaders = rawBaseHeaders.filter((h) => !isGhostOrEmptyColumn(h));
+
+  const canonicalHeaders = [...baseHeaders];
+  const canonicalSet = new Set(baseHeaders);
+  const extraColumnsDiscovered = new Set();
+  let extraColumnsEliminatedCount = 0;
+
   let allMergedRows = [];
-  const mergedHeadersSet = new Set();
 
   fileResults.forEach((res, fileIdx) => {
     const origFile = files[fileIdx];
@@ -119,18 +270,69 @@ export async function parseMultipleExcelFiles(fileList) {
 
       const sData = res.sheetsData[sName];
       sheetNames.push(uniqueSheetKey);
-      sheetsData[uniqueSheetKey] = sData;
       fileTotalRows += sData.rowCount;
 
-      // Collect unique headers
-      sData.headers.forEach((h) => mergedHeadersSet.add(h));
+      // Build column mapping from this sheet's columns to canonical base columns
+      const columnAlignMap = new Map();
 
-      // Tag each row with its source file name
-      const taggedRows = sData.rows.map((r) => ({
-        ...r,
-        _Source_File: res.fileName,
-      }));
-      allMergedRows = allMergedRows.concat(taggedRows);
+      sData.headers.forEach((incomingCol) => {
+        if (isGhostOrEmptyColumn(incomingCol)) return;
+
+        // Try to match with existing canonical base headers
+        const matchedBase = findMatchingBaseColumn(incomingCol, canonicalHeaders);
+        if (matchedBase) {
+          columnAlignMap.set(incomingCol, matchedBase);
+        } else {
+          // Column does not match any existing base column
+          extraColumnsDiscovered.add(incomingCol);
+          if (!strictBaseSchema) {
+            if (!canonicalSet.has(incomingCol)) {
+              canonicalSet.add(incomingCol);
+              canonicalHeaders.push(incomingCol);
+            }
+            columnAlignMap.set(incomingCol, incomingCol);
+          } else {
+            extraColumnsEliminatedCount++;
+          }
+        }
+      });
+
+      // Align and transform rows so all keys strictly match canonical headers
+      const alignedRows = sData.rows.map((r) => {
+        const alignedRow = {};
+
+        // 1. Initialize canonical headers with empty values
+        canonicalHeaders.forEach((ch) => {
+          alignedRow[ch] = '';
+        });
+
+        // 2. Populate values using the column alignment mapping
+        Object.entries(r).forEach(([rawKey, val]) => {
+          if (isGhostOrEmptyColumn(rawKey)) return;
+
+          const targetCol = columnAlignMap.get(rawKey);
+          if (targetCol && canonicalSet.has(targetCol)) {
+            if (val !== undefined && val !== null && String(val).trim() !== '') {
+              alignedRow[targetCol] = val;
+            }
+          }
+        });
+
+        // 3. Optional _Source_File column
+        if (includeSourceFile) {
+          alignedRow['_Source_File'] = res.fileName;
+        }
+
+        return alignedRow;
+      });
+
+      sheetsData[uniqueSheetKey] = {
+        headers: sData.headers,
+        rows: sData.rows,
+        rowCount: sData.rowCount,
+      };
+
+      allMergedRows = allMergedRows.concat(alignedRows);
     });
 
     filesSummary.push({
@@ -140,16 +342,23 @@ export async function parseMultipleExcelFiles(fileList) {
       size: origFile.size,
       sheets: res.sheetNames,
       totalRows: fileTotalRows,
+      columnsCount: res.sheetsData[res.sheetNames[0]]?.headers?.length || 0,
     });
   });
 
-  // Consolidated master sheet
-  const mergedSheetName = `Consolidated (${files.length} Files Merged)`;
-  mergedHeadersSet.add('_Source_File');
-  const mergedHeaders = Array.from(mergedHeadersSet);
+  // Final Merged Headers
+  const finalMergedHeaders = [...canonicalHeaders];
+  if (includeSourceFile && !finalMergedHeaders.includes('_Source_File')) {
+    finalMergedHeaders.push('_Source_File');
+  }
 
+  // Filter out any explicitly excluded columns
+  const excludedSet = new Set(excludedColumns || []);
+  const cleanMergedHeaders = finalMergedHeaders.filter((h) => !excludedSet.has(h));
+
+  const mergedSheetName = `Consolidated (${files.length} Files Merged)`;
   sheetsData[mergedSheetName] = {
-    headers: mergedHeaders,
+    headers: cleanMergedHeaders,
     rows: allMergedRows,
     rowCount: allMergedRows.length,
     isMerged: true,
@@ -162,6 +371,14 @@ export async function parseMultipleExcelFiles(fileList) {
     sheetsData,
     filesSummary,
     allFiles: fileResults,
+    baseColumns: baseHeaders,
+    extraColumnsDiscovered: Array.from(extraColumnsDiscovered),
+    harmonizedStats: {
+      baseColumnsCount: baseHeaders.length,
+      finalColumnsCount: cleanMergedHeaders.length,
+      extraColumnsEliminated: extraColumnsEliminatedCount,
+      strictBaseSchema,
+    },
   };
 }
 
@@ -232,9 +449,12 @@ export function exportMasterExcelFile(
   if (allOriginalCols.length === 0 && records.length > 0) {
     const sampleRaw = records[0].rawRow || records[0].transactions?.[0]?.rawRow;
     if (sampleRaw) {
-      allOriginalCols = Object.keys(sampleRaw);
+      allOriginalCols = Object.keys(sampleRaw).filter((k) => !isGhostOrEmptyColumn(k));
     }
   }
+
+  // Strictly filter out any ghost or empty columns
+  allOriginalCols = allOriginalCols.filter((k) => !isGhostOrEmptyColumn(k));
 
   // Tab 1: Comprehensive Master Register - Exactly preserving all original uploaded columns first
   const masterData = records.map((r) => {
@@ -389,5 +609,43 @@ export function exportMasterExcelFile(
   XLSX.utils.book_append_sheet(wb, wsSummary, '6. Executive Statistics');
 
   // Write and download
+  XLSX.writeFile(wb, fileName);
+}
+
+/**
+ * Generate and Download Clean Master File with ONLY the Original Columns
+ * Perfect for re-uploading to RAMIS or external government systems with ZERO extra columns
+ */
+export function exportCleanOriginalExcelFile(
+  records,
+  fileName = 'IRD_Consolidated_Clean_Original_Data.xlsx',
+  originalHeaders = [],
+  rawRows = []
+) {
+  const wb = XLSX.utils.book_new();
+
+  let allOriginalCols = originalHeaders && originalHeaders.length > 0 ? [...originalHeaders] : [];
+  if (allOriginalCols.length === 0 && records.length > 0) {
+    const sampleRaw = records[0].rawRow || records[0].transactions?.[0]?.rawRow;
+    if (sampleRaw) {
+      allOriginalCols = Object.keys(sampleRaw).filter((k) => !isGhostOrEmptyColumn(k));
+    }
+  }
+
+  // Strictly filter out any ghost or empty columns
+  allOriginalCols = allOriginalCols.filter((k) => !isGhostOrEmptyColumn(k));
+
+  // Build rows with ONLY original columns
+  const cleanData = records.map((r) => {
+    const raw = r.rawRow || r.transactions?.[0]?.rawRow || {};
+    const rowObj = {};
+    allOriginalCols.forEach((col) => {
+      rowObj[col] = raw[col] !== undefined && raw[col] !== null ? raw[col] : '';
+    });
+    return rowObj;
+  });
+
+  const ws = XLSX.utils.json_to_sheet(cleanData);
+  XLSX.utils.book_append_sheet(wb, ws, 'Consolidated Original Data');
   XLSX.writeFile(wb, fileName);
 }

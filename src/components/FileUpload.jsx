@@ -17,6 +17,7 @@ import {
   Folder,
   FolderOpen,
   FolderPlus,
+  Columns,
 } from 'lucide-react';
 import { getTranslation } from '../utils/translations';
 import { extractFilesFromDataTransfer, filterExcelAndCsvFiles } from '../utils/folderScanner';
@@ -33,6 +34,7 @@ export default function FileUpload({
   isLoading,
   language = 'en',
   onProceedToMapping,
+  onOpenHarmonizer,
 }) {
   const [isDragging, setIsDragging] = useState(false);
   const [recentNotice, setRecentNotice] = useState('');
@@ -452,6 +454,24 @@ export default function FileUpload({
                 <FolderPlus size={14} />
                 <span>{t.addMoreFolders}</span>
               </button>
+
+              {onOpenHarmonizer && (
+                <button
+                  type="button"
+                  onClick={onOpenHarmonizer}
+                  className="btn btn-outline btn-sm"
+                  style={{
+                    borderColor: 'rgba(59, 130, 246, 0.55)',
+                    color: '#93c5fd',
+                    fontWeight: 700,
+                    background: 'rgba(59, 130, 246, 0.08)',
+                  }}
+                  title="Manage and align columns to prevent extra duplicate columns"
+                >
+                  <Columns size={14} />
+                  <span>{language === 'si' ? 'Columns කළමනාකරණය' : 'Manage Columns'}</span>
+                </button>
+              )}
 
               <button
                 type="button"

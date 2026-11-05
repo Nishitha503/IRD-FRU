@@ -6,6 +6,7 @@
 import { parseSriLankanNIC } from './nicValidator';
 import { parseSriLankanTIN, parseSriLankanBRN } from './tinValidator';
 import { detectDistrictFromAddress } from './districtMapping';
+import { isGhostOrEmptyColumn } from './excelProcessor';
 
 export const DEFAULT_RULES = {
   mandatoryTinAge: 18,
@@ -38,9 +39,9 @@ export function analyzeRawData(rawRows, columnMapping, ruleConfig = DEFAULT_RULE
   const consolidatedMap = new Map();
   const unidentifiableRows = [];
 
-  const headers = originalHeaders && originalHeaders.length > 0
+  const headers = (originalHeaders && originalHeaders.length > 0
     ? originalHeaders
-    : (rawRows && rawRows.length > 0 ? Object.keys(rawRows[0]) : []);
+    : (rawRows && rawRows.length > 0 ? Object.keys(rawRows[0]) : [])).filter((h) => !isGhostOrEmptyColumn(h));
 
   rawRows.forEach((row, index) => {
     // Extract mapped fields

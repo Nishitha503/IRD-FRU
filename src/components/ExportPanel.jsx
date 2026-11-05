@@ -10,7 +10,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { exportMasterExcelFile } from '../utils/excelProcessor';
+import { exportMasterExcelFile, exportCleanOriginalExcelFile } from '../utils/excelProcessor';
 
 export default function ExportPanel({
   records,
@@ -21,6 +21,7 @@ export default function ExportPanel({
   rawRows = [],
 }) {
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingClean, setIsExportingClean] = useState(false);
   const [exportedSuccess, setExportedSuccess] = useState(false);
 
   const handleExportExcel = () => {
@@ -41,6 +42,26 @@ export default function ExportPanel({
         setIsExporting(false);
       }
     }, 500);
+  };
+
+  const handleExportCleanOriginal = () => {
+    setIsExportingClean(true);
+    setTimeout(() => {
+      try {
+        const outName = `IRD_Clean_Original_Dataset_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        exportCleanOriginalExcelFile(records, outName, originalHeaders, rawRows);
+        setExportedSuccess(true);
+        confetti({
+          particleCount: 70,
+          spread: 60,
+          origin: { y: 0.6 },
+        });
+      } catch (err) {
+        alert('Export failed: ' + err.message);
+      } finally {
+        setIsExportingClean(false);
+      }
+    }, 400);
   };
 
   return (
@@ -82,16 +103,41 @@ export default function ExportPanel({
             </p>
           </div>
 
-          {/* Export Button */}
-          <button
-            onClick={handleExportExcel}
-            disabled={isExporting}
-            className="btn btn-primary btn-lg pulse-glow"
-            style={{ minWidth: '340px', gap: '12px' }}
-          >
-            <FileSpreadsheet size={22} />
-            <span>{isExporting ? 'Generating Multi-Tab Excel...' : 'Download Master File (.xlsx)'}</span>
-          </button>
+          {/* Export Action Buttons */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', maxWidth: '440px', margin: '0 auto' }}>
+            <button
+              onClick={handleExportExcel}
+              disabled={isExporting || isExportingClean}
+              className="btn btn-primary btn-lg pulse-glow"
+              style={{ width: '100%', gap: '12px', justifyContent: 'center' }}
+            >
+              <FileSpreadsheet size={22} />
+              <span>{isExporting ? 'Generating Multi-Tab Excel...' : 'Download Master Audit File (.xlsx)'}</span>
+            </button>
+
+            <button
+              onClick={handleExportCleanOriginal}
+              disabled={isExporting || isExportingClean}
+              className="btn btn-outline btn-md"
+              style={{
+                width: '100%',
+                gap: '10px',
+                justifyContent: 'center',
+                borderColor: 'rgba(16, 185, 129, 0.6)',
+                color: '#6ee7b7',
+                fontWeight: 700,
+                background: 'rgba(16, 185, 129, 0.08)',
+              }}
+              title="Download consolidated dataset with ONLY original columns (zero extra columns)"
+            >
+              <DownloadCloud size={18} />
+              <span>{isExportingClean ? 'Preparing Clean File...' : 'Download Clean Original Columns (.xlsx) (මුල් Columns පමණි)'}</span>
+            </button>
+          </div>
+
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+            💡 <strong>මුල් Columns පමණක් අවශ්‍ය නම්:</strong> දෙවන බොත්තම (Clean Original Columns) මඟින් කිසිදු අමතර IRD column එකක් රහිතව මුල් columns පමණක් බාගත කරගත හැක.
+          </div>
 
           {exportedSuccess && (
             <div
@@ -106,7 +152,7 @@ export default function ExportPanel({
               }}
             >
               <CheckCircle2 size={16} />
-              <span>Master File downloaded successfully to your computer!</span>
+              <span>Excel file downloaded successfully to your computer!</span>
             </div>
           )}
         </div>

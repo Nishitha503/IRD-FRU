@@ -17,6 +17,7 @@ export default function ColumnMapper({
   onRunAnalysis,
   onBack,
   fileName,
+  onOpenHarmonizer,
 }) {
   const fields = [
     {
@@ -113,7 +114,24 @@ export default function ColumnMapper({
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+            {onOpenHarmonizer && (
+              <button
+                type="button"
+                onClick={onOpenHarmonizer}
+                className="btn btn-outline btn-sm"
+                style={{
+                  borderColor: 'rgba(59, 130, 246, 0.55)',
+                  color: '#93c5fd',
+                  fontWeight: 700,
+                  background: 'rgba(59, 130, 246, 0.08)',
+                }}
+                title="Manage columns and exclude unwanted extra columns"
+              >
+                <Columns size={14} />
+                <span>Columns කළමනාකරණය</span>
+              </button>
+            )}
             <button onClick={onBack} className="btn btn-outline btn-sm">
               ← Change File
             </button>

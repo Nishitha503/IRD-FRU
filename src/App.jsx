@@ -14,6 +14,7 @@ import WelcomeGateway from './components/WelcomeGateway';
 import ExportPanel from './components/ExportPanel';
 import TinHistoryModal from './components/TinHistoryModal';
 import SharedFolderModal from './components/SharedFolderModal';
+import ColumnHarmonizerModal from './components/ColumnHarmonizerModal';
 
 import { parseExcelFile, parseMultipleExcelFiles, autoDetectColumnMapping } from './utils/excelProcessor';
 import { analyzeRawData, DEFAULT_RULES } from './utils/ruleEngine';
@@ -86,6 +87,12 @@ export default function App() {
   const [isTinHistoryOpen, setIsTinHistoryOpen] = useState(false);
   const [selectedTinForHistory, setSelectedTinForHistory] = useState('');
   const [isSharedFolderModalOpen, setIsSharedFolderModalOpen] = useState(false);
+  const [isHarmonizerModalOpen, setIsHarmonizerModalOpen] = useState(false);
+  const [harmonizerConfig, setHarmonizerConfig] = useState({
+    strictBaseSchema: true,
+    includeSourceFile: false,
+    excludedColumns: [],
+  });
 
   const handleOpenTinHistory = (tinToSearch = '') => {
     setSelectedTinForHistory(typeof tinToSearch === 'string' ? tinToSearch : '');
@@ -176,7 +183,7 @@ export default function App() {
 
       uploadedFilesListRef.current = uniqueFiles;
       setUploadedFilesList(uniqueFiles);
-      const parsed = await parseMultipleExcelFiles(uniqueFiles);
+      const parsed = await parseMultipleExcelFiles(uniqueFiles, harmonizerConfig);
       setParsedFileInfo(parsed);
       const firstSheet = parsed.sheetNames[0];
       setSelectedSheet(firstSheet);
@@ -185,6 +192,24 @@ export default function App() {
       alert('Error reading Excel file(s): ' + err.message);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Update column harmonizer settings and re-process datasets
+  const handleUpdateHarmonizerConfig = async (newConfig) => {
+    setHarmonizerConfig(newConfig);
+    if (uploadedFilesListRef.current.length > 0) {
+      setIsLoading(true);
+      try {
+        const parsed = await parseMultipleExcelFiles(uploadedFilesListRef.current, newConfig);
+        setParsedFileInfo(parsed);
+        const firstSheet = parsed.sheetNames[0];
+        setSelectedSheet(firstSheet);
+      } catch (err) {
+        alert('Error updating column schema: ' + err.message);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -199,7 +224,7 @@ export default function App() {
     setUploadedFilesList(updated);
     setIsLoading(true);
     try {
-      const parsed = await parseMultipleExcelFiles(updated);
+      const parsed = await parseMultipleExcelFiles(updated, harmonizerConfig);
       setParsedFileInfo(parsed);
       setSelectedSheet(parsed.sheetNames[0]);
     } catch (err) {
@@ -381,6 +406,7 @@ export default function App() {
             parsedFileInfo={parsedFileInfo}
             isLoading={isLoading}
             language={language}
+            onOpenHarmonizer={() => setIsHarmonizerModalOpen(true)}
             onProceedToMapping={() => {
               setCurrentStep(2);
               setMaxStepAllowed((prev) => Math.max(prev, 2));
@@ -398,6 +424,7 @@ export default function App() {
             onRunAnalysis={handleRunAnalysis}
             onBack={() => setCurrentStep(1)}
             fileName={parsedFileInfo?.fileName || 'Uploaded File'}
+            onOpenHarmonizer={() => setIsHarmonizerModalOpen(true)}
           />
         )}
 
@@ -501,6 +528,15 @@ export default function App() {
         onClose={() => setIsSharedFolderModalOpen(false)}
         records={masterRecords}
         activeOfficer={activeOfficer}
+        language={language}
+      />
+
+      <ColumnHarmonizerModal
+        isOpen={isHarmonizerModalOpen}
+        onClose={() => setIsHarmonizerModalOpen(false)}
+        parsedFileInfo={parsedFileInfo}
+        harmonizerConfig={harmonizerConfig}
+        onUpdateConfig={handleUpdateHarmonizerConfig}
         language={language}
       />
 

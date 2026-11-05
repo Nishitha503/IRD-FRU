@@ -26,6 +26,7 @@ export default function FileUpload({
   onFileUploaded,
   uploadedFilesList = [],
   onRemoveFile,
+  onReset,
   selectedSheet,
   setSelectedSheet,
   parsedFileInfo,
@@ -34,6 +35,9 @@ export default function FileUpload({
   onProceedToMapping,
 }) {
   const [isDragging, setIsDragging] = useState(false);
+  const [recentNotice, setRecentNotice] = useState('');
+  const [draggedFileIndex, setDraggedFileIndex] = useState(null);
+  const [isOverTrashZone, setIsOverTrashZone] = useState(false);
   const fileInputRef = useRef(null);
   const appendFileInputRef = useRef(null);
   const folderInputRef = useRef(null);
@@ -51,29 +55,71 @@ export default function FileUpload({
 
   const handleDragOver = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragging(true);
   };
 
   const handleDragLeave = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragging(false);
   };
 
   const handleDrop = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragging(false);
+
+    // If an existing file chip was dragged out to remove
+    const isChip = e.dataTransfer && e.dataTransfer.types.includes('application/x-ird-file-chip');
+    if (isChip) {
+      const idxStr = e.dataTransfer.getData('text/plain');
+      const idxNum = parseInt(idxStr, 10);
+      if (!isNaN(idxNum) && onRemoveFile) {
+        onRemoveFile(idxNum);
+        setDraggedFileIndex(null);
+        return;
+      }
+    }
+
     try {
       const extracted = await extractFilesFromDataTransfer(e.dataTransfer);
       if (extracted && extracted.length > 0) {
-        triggerFilesUpload(extracted, false);
+        // Incremental One-by-One Drag & Drop: When files exist, automatically append!
+        const shouldAppend = uploadedFilesList && uploadedFilesList.length > 0;
+        triggerFilesUpload(extracted, shouldAppend);
+
+        const count = extracted.length;
+        const msg = shouldAppend
+          ? (language === 'si'
+              ? `✓ +${count} ගොනු සාර්ථකව Batch එකට එකතු විය! (මුළු ගොනු: ${uploadedFilesList.length + count})`
+              : language === 'ta'
+              ? `✓ +${count} கோப்புகள் வெற்றிகரமாக சேர்க்கப்பட்டன!`
+              : `✓ +${count} file(s) added to batch! (Total: ${uploadedFilesList.length + count})`)
+          : (language === 'si'
+              ? `✓ ගොනු ${count} ක් ඇතුළත් විය!`
+              : language === 'ta'
+              ? `✓ ${count} கோப்புகள் பதிவேற்றப்பட்டன!`
+              : `✓ ${count} file(s) ingested!`);
+        setRecentNotice(msg);
+        setTimeout(() => setRecentNotice(''), 4500);
       } else {
-        alert('No valid Excel (.xlsx, .xls) or CSV files found in the dropped folder(s)/files.');
+        alert('No valid Excel (.xlsx, .xls) or CSV files found in the dropped item(s).');
       }
     } catch (err) {
       console.error('Folder/file drop extraction error:', err);
       if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        triggerFilesUpload(e.dataTransfer.files, false);
+        const shouldAppend = uploadedFilesList && uploadedFilesList.length > 0;
+        triggerFilesUpload(e.dataTransfer.files, shouldAppend);
       }
+    }
+  };
+
+  const handleDropzoneClick = () => {
+    if (uploadedFilesList.length > 0) {
+      appendFileInputRef.current && appendFileInputRef.current.click();
+    } else {
+      fileInputRef.current && fileInputRef.current.click();
     }
   };
 
@@ -105,7 +151,13 @@ export default function FileUpload({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div
+      onDragOver={(e) => {
+        e.preventDefault();
+      }}
+      onDrop={handleDrop}
+      style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}
+    >
       {/* Hidden File Inputs for Standard Multiple Files Selection */}
       <input
         type="file"
@@ -144,14 +196,28 @@ export default function FileUpload({
         style={{ display: 'none' }}
       />
 
-      {/* 1. Main FRU Multi-File & Multi-Folder Batch Dropzone */}
+      {/* 1. Main FRU Multi-File & Multi-Folder Batch Dropzone (Supports One-by-One Incremental Drag & Drop) */}
       <div
         className={`dropzone-box glass-card ${isDragging ? 'drag-active' : ''}`}
         onDragOver={handleDragOver}
+        onDragEnter={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        onClick={() => fileInputRef.current && fileInputRef.current.click()}
-        style={{ cursor: 'pointer' }}
+        onClick={handleDropzoneClick}
+        style={{
+          cursor: 'pointer',
+          transition: 'all 0.25s ease',
+          borderColor: isDragging
+            ? 'var(--accent-gold)'
+            : uploadedFilesList.length > 0
+            ? 'rgba(16, 185, 129, 0.55)'
+            : undefined,
+          background: isDragging
+            ? 'rgba(212, 175, 55, 0.08)'
+            : uploadedFilesList.length > 0
+            ? 'rgba(16, 185, 129, 0.03)'
+            : undefined,
+        }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px', textAlign: 'center' }}>
           <div
@@ -159,39 +225,71 @@ export default function FileUpload({
               width: '72px',
               height: '72px',
               borderRadius: '50%',
-              background: 'rgba(212, 175, 55, 0.12)',
-              border: '1.5px solid rgba(212, 175, 55, 0.35)',
+              background: uploadedFilesList.length > 0
+                ? 'rgba(16, 185, 129, 0.15)'
+                : 'rgba(212, 175, 55, 0.12)',
+              border: uploadedFilesList.length > 0
+                ? '1.5px solid rgba(16, 185, 129, 0.45)'
+                : '1.5px solid rgba(212, 175, 55, 0.35)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: 'var(--accent-gold)',
+              color: uploadedFilesList.length > 0 ? '#10b981' : 'var(--accent-gold)',
             }}
           >
-            <UploadCloud size={36} />
+            {uploadedFilesList.length > 0 ? <FolderPlus size={36} /> : <UploadCloud size={36} />}
           </div>
 
           <div>
             <h3 style={{ fontSize: '19px', fontWeight: 700, marginBottom: '6px', color: 'var(--text-primary)' }}>
-              {t.uploadHeader}
+              {uploadedFilesList.length > 0 ? t.dropMoreFilesHeader : t.uploadHeader}
             </h3>
-            <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', maxWidth: '620px', margin: '0 auto' }}>
-              {t.uploadSubheader}
+            <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', maxWidth: '640px', margin: '0 auto', lineHeight: 1.5 }}>
+              {uploadedFilesList.length > 0
+                ? t.dropMoreFilesSub.replace('{count}', uploadedFilesList.length)
+                : t.uploadSubheader}
             </p>
           </div>
 
-          {/* Action Trigger Buttons: Browse Files OR Select Folder(s) */}
+          {/* Real-time Incremental Drop Notification Pill */}
+          {recentNotice && (
+            <div
+              style={{
+                fontSize: '12.5px',
+                fontWeight: 700,
+                color: '#34d399',
+                background: 'rgba(16, 185, 129, 0.18)',
+                border: '1px solid rgba(16, 185, 129, 0.45)',
+                padding: '6px 18px',
+                borderRadius: '20px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                animation: 'pulse 1.5s infinite',
+              }}
+            >
+              <CheckCircle2 size={16} />
+              <span>{recentNotice}</span>
+            </div>
+          )}
+
+          {/* Action Trigger Buttons */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
             <button
               type="button"
               className="btn btn-ird-gold btn-sm"
               onClick={(e) => {
                 e.stopPropagation();
-                fileInputRef.current && fileInputRef.current.click();
+                if (uploadedFilesList.length > 0) {
+                  appendFileInputRef.current && appendFileInputRef.current.click();
+                } else {
+                  fileInputRef.current && fileInputRef.current.click();
+                }
               }}
               style={{ fontWeight: 700 }}
             >
               <Files size={15} />
-              <span>{t.uploadButtonText}</span>
+              <span>{uploadedFilesList.length > 0 ? t.addMoreFiles : t.uploadButtonText}</span>
             </button>
 
             <button
@@ -199,51 +297,88 @@ export default function FileUpload({
               className="btn btn-outline btn-sm"
               onClick={(e) => {
                 e.stopPropagation();
-                folderInputRef.current && folderInputRef.current.click();
+                if (uploadedFilesList.length > 0) {
+                  appendFolderInputRef.current && appendFolderInputRef.current.click();
+                } else {
+                  folderInputRef.current && folderInputRef.current.click();
+                }
               }}
               style={{ borderColor: 'rgba(212, 175, 55, 0.6)', color: '#fde047', fontWeight: 700 }}
               title="Select an entire folder containing Excel/CSV files"
             >
               <FolderOpen size={15} />
-              <span>{t.uploadFolderBtn}</span>
+              <span>{uploadedFilesList.length > 0 ? t.addMoreFolders : t.uploadFolderBtn}</span>
             </button>
+
+            {uploadedFilesList.length > 0 && onReset && (
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (window.confirm(language === 'si' ? 'සියලුම ගොනු ඉවත් කර අලුතින් ආරම්භ කිරීමට අවශ්‍යද?' : 'Are you sure you want to clear all files and start fresh?')) {
+                    onReset();
+                  }
+                }}
+                style={{ borderColor: 'rgba(239, 68, 68, 0.45)', color: '#f87171', fontWeight: 700 }}
+                title="Clear all files in the batch"
+              >
+                <Trash2 size={14} />
+                <span>{t.clearAllFiles}</span>
+              </button>
+            )}
 
             <span className="badge badge-neutral" style={{ fontSize: '11px', padding: '6px 12px' }}>
               {t.supportedFormats}
             </span>
           </div>
 
-          {/* Folder Drag & Drop Explanatory Badge */}
-          <div
-            style={{
-              fontSize: '12px',
-              color: '#6ee7b7',
-              background: 'rgba(16, 185, 129, 0.09)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              padding: '6px 14px',
-              borderRadius: '20px',
-              marginTop: '4px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            <Folder size={14} color="#34d399" />
-            <span>{t.folderDropHint}</span>
+          {/* Folder & One-by-One Drag Explanatory Badges */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px', justifyContent: 'center' }}>
+            <div
+              style={{
+                fontSize: '12px',
+                color: '#6ee7b7',
+                background: 'rgba(16, 185, 129, 0.09)',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+                padding: '5px 14px',
+                borderRadius: '20px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <Folder size={14} color="#34d399" />
+              <span>{t.folderDropHint}</span>
+            </div>
+
+            <div
+              style={{
+                fontSize: '12px',
+                color: '#fde047',
+                background: 'rgba(212, 175, 55, 0.1)',
+                border: '1px solid rgba(212, 175, 55, 0.35)',
+                padding: '5px 14px',
+                borderRadius: '20px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <Plus size={14} color="#fde047" />
+              <span>{t.oneByOneHint}</span>
+            </div>
           </div>
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px', justifyContent: 'center' }}>
             <span className="badge badge-low" style={{ fontSize: '11px' }}>
               <ShieldCheck size={12} /> 100% Client-Side Secure
             </span>
             <span className="badge badge-neutral" style={{ fontSize: '11px' }}>
+              {t.batchCountLabel}
+            </span>
+            <span className="badge badge-neutral" style={{ fontSize: '11px' }}>
               Multi-Folder & Subfolder Scanner
-            </span>
-            <span className="badge badge-neutral" style={{ fontSize: '11px' }}>
-              Multi-File Batch Aggregator
-            </span>
-            <span className="badge badge-neutral" style={{ fontSize: '11px' }}>
-              Section 102 Compliant
             </span>
           </div>
         </div>
@@ -356,6 +491,16 @@ export default function FileUpload({
                 {parsedFileInfo.filesSummary.map((fileItem, fIdx) => (
                   <div
                     key={`${fileItem.name}_${fIdx}`}
+                    draggable={true}
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('text/plain', String(fIdx));
+                      e.dataTransfer.setData('application/x-ird-file-chip', 'true');
+                      setDraggedFileIndex(fIdx);
+                    }}
+                    onDragEnd={() => {
+                      setDraggedFileIndex(null);
+                      setIsOverTrashZone(false);
+                    }}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -364,7 +509,10 @@ export default function FileUpload({
                       border: '1px solid rgba(212, 175, 55, 0.25)',
                       borderRadius: '8px',
                       padding: '8px 12px',
+                      cursor: 'grab',
+                      transition: 'transform 0.15s ease, border-color 0.15s ease',
                     }}
+                    title="Drag out to remove or click trash button (ඉවත් කිරීමට අදින්න හෝ බටනය ඔබන්න)"
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
                       {fileItem.folderPath ? (
@@ -407,13 +555,16 @@ export default function FileUpload({
                       </div>
                     </div>
 
-                    {onRemoveFile && parsedFileInfo.filesSummary.length > 1 && (
+                    {onRemoveFile && (
                       <button
                         type="button"
-                        onClick={() => onRemoveFile(fIdx)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRemoveFile(fIdx);
+                        }}
                         className="btn btn-outline btn-xs"
-                        style={{ padding: '3px 6px', color: '#f87171', borderColor: 'rgba(239, 68, 68, 0.3)' }}
-                        title="Remove this file from batch"
+                        style={{ padding: '3px 7px', color: '#f87171', borderColor: 'rgba(239, 68, 68, 0.35)' }}
+                        title="Remove this file from batch (මෙම ගොනුව ඉවත් කරන්න)"
                       >
                         <Trash2 size={12} />
                       </button>
@@ -421,6 +572,52 @@ export default function FileUpload({
                   </div>
                 ))}
               </div>
+
+              {/* Dedicated Drag-Out Trash Drop Target */}
+              {draggedFileIndex !== null && (
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsOverTrashZone(true);
+                  }}
+                  onDragLeave={() => setIsOverTrashZone(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (draggedFileIndex !== null && onRemoveFile) {
+                      onRemoveFile(draggedFileIndex);
+                      setDraggedFileIndex(null);
+                      setIsOverTrashZone(false);
+                    }
+                  }}
+                  style={{
+                    marginTop: '14px',
+                    padding: '14px 20px',
+                    border: '2px dashed #ef4444',
+                    borderRadius: '10px',
+                    background: isOverTrashZone ? 'rgba(239, 68, 68, 0.25)' : 'rgba(239, 68, 68, 0.1)',
+                    textAlign: 'center',
+                    color: '#f87171',
+                    fontWeight: 700,
+                    fontSize: '13px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <Trash2 size={18} />
+                  <span>
+                    {language === 'si'
+                      ? 'මෙම ගොනුව ඉවත් කිරීමට (Remove) මෙතැනට Drop කරන්න'
+                      : language === 'ta'
+                      ? 'இந்தக் கோப்பை அகற்ற இங்கே Drop செய்யவும்'
+                      : 'Drop here to remove file from batch'}
+                  </span>
+                </div>
+              )}
             </div>
           )}
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Header from './components/Header';
 import StepIndicator from './components/StepIndicator';
 import FileUpload from './components/FileUpload';
@@ -48,8 +48,12 @@ export default function App() {
   const [activeOfficer, setActiveOfficer] = useState(() => getActiveOfficerProfile(loadOfficerProfiles()));
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
 
-  // File and Sheet State (Supports Multi-File Batch Ingestion)
+  // File and Sheet State (Supports Multi-File Batch Ingestion & One-by-One Drops)
   const [uploadedFilesList, setUploadedFilesList] = useState([]);
+  const uploadedFilesListRef = useRef([]);
+  useEffect(() => {
+    uploadedFilesListRef.current = uploadedFilesList;
+  }, [uploadedFilesList]);
   const [parsedFileInfo, setParsedFileInfo] = useState(null);
   const [selectedSheet, setSelectedSheet] = useState('');
   const [rawRows, setRawRows] = useState([]);
@@ -149,15 +153,16 @@ export default function App() {
     saveOfficerProfiles(profiles);
   };
 
-  // Handle uploaded local file(s) - Supports Multi-file Batch Ingestion
+  // Handle uploaded local file(s) - Supports Multi-file Batch Ingestion & One-by-One incremental drops
   const handleFilesUpload = async (newFiles, append = false) => {
     setIsLoading(true);
     try {
       const filesArray = Array.from(newFiles || []);
       if (filesArray.length === 0) return;
 
-      const combined = append ? [...uploadedFilesList, ...filesArray] : filesArray;
-      // Deduplicate files by name & size
+      const baseList = append ? uploadedFilesListRef.current : [];
+      const combined = [...baseList, ...filesArray];
+      // Deduplicate files by path/name & size
       const uniqueFiles = [];
       const seen = new Set();
       for (const f of combined) {
@@ -169,6 +174,7 @@ export default function App() {
         }
       }
 
+      uploadedFilesListRef.current = uniqueFiles;
       setUploadedFilesList(uniqueFiles);
       const parsed = await parseMultipleExcelFiles(uniqueFiles);
       setParsedFileInfo(parsed);
@@ -184,7 +190,8 @@ export default function App() {
 
   // Remove a file from the uploaded multi-file batch
   const handleRemoveUploadedFile = async (fileIndex) => {
-    const updated = uploadedFilesList.filter((_, idx) => idx !== fileIndex);
+    const updated = uploadedFilesListRef.current.filter((_, idx) => idx !== fileIndex);
+    uploadedFilesListRef.current = updated;
     if (updated.length === 0) {
       handleReset();
       return;
@@ -297,6 +304,7 @@ export default function App() {
 
   // Reset all and start fresh
   const handleReset = () => {
+    uploadedFilesListRef.current = [];
     setUploadedFilesList([]);
     setParsedFileInfo(null);
     setSelectedSheet('');
@@ -367,6 +375,7 @@ export default function App() {
             onFileUploaded={handleFilesUpload}
             uploadedFilesList={uploadedFilesList}
             onRemoveFile={handleRemoveUploadedFile}
+            onReset={handleReset}
             selectedSheet={selectedSheet}
             setSelectedSheet={setSelectedSheet}
             parsedFileInfo={parsedFileInfo}

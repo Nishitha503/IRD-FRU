@@ -353,3 +353,4 @@ export async function query6MonthTransactions(tinOrNic, activeSessionRecords = [
 
   return Array.from(combinedMap.values());
 }
+
